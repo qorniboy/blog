@@ -1,0 +1,52 @@
+<!doctype html>
+    <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <link rel="stylesheet" type="text/css" href="../../styles.css">
+            <title>Faiz Alqorni's Blog</title>
+        </head>
+        <body>
+            <h1>Q's blog</h1>
+            <p class="pages">
+                <a href="index.html">Home</a>
+                <a href="about.html">About me</a>
+            </p>
+            <h1>Hackthebox - Blocky Writeup</h1>
+            <p>
+                A straightforward easy box on Hackthebox by enumerating wordpress site. Reversing a jar file and misconfiguration on sudo.
+                As usual you should start on scanning the target.
+            </p>
+            <img src="images/1. nmap scan.png" alt="nmap-result">
+            <p>
+                Do your usual content enumeration in this case I use gobuster*. I notice that the webserver is running wordpress site.
+            </p>
+            <img src="images/2. enum webserver.png" alt="enum-webserver">
+            <p>
+                Run a wpscan* scan, try to enumerate everything. The following is an interesting finding that will be relevant to next exploitation process which is username <b>notch</b>.
+            </p>
+            <img src="images/3. Notch user.png" alt="username-notch">
+            <p>
+                Exploring the result of content enumerations we found multiple unusual plugins with jar extension.
+            </p>
+            <img src="images/4. Jar files under plugins.png" alt="multiple-jars">
+            <p>
+                Reversing jar files using jadx-gui* we found some interesting strings.
+            </p>
+            <img src="images/5. Reverse jar.png" alt="reverse-jars">
+            <pre>
+Credential Found:
+notch:8YsqfCTnvxAUeduziJNSXe22</pre>
+            <p>
+                Use the credential to access shell via SSH. Funnily enough the server is misconfigured to allow NO PASSWORD sudo* as Notch. Free root boys.
+            </p>
+            <img src="images/6. SSH using pass user sudo misconfig.png" alt="reverse-jars">
+            <p class="footer">
+            <ol>
+                <li><a href="https://github.com/OJ/gobuster">Gobuster</a></li>
+                <li><a href="https://wpscan.com/">WPScan</a></li>
+                <li><a href="https://stackoverflow.com/questions/47423552/what-is-the-meaning-of-jenkins-all-all-nopasswd-all-and-does-it-create-a-se">Sudo nopasswd</a></li>
+            </ol>
+            </p>
+        </body>
+    </html>

@@ -1,0 +1,46 @@
+* {
+    background-color: black;
+    color: white;
+}
+body{
+    max-width: 40em;
+    margin: .5in auto;
+    font-size: 18px;
+    font-family: serif;
+    line-height: 1.5;
+}
+h1, h2{
+    border-bottom: 1px solid grey;
+    font-family: Helvetica;
+}
+pre {
+    padding-left: 1em;
+    line-height: 1.5em;
+    border-left: 5px solid #efefef;
+    color: greenyellow;
+}
+
+img{
+    max-width: 100%;
+}
+
+a{
+    color:#1a6e8e;
+}
+
+a:visited{
+    color: #551A8B; 
+}
+
+.pages a{
+    margin-right: 1em;
+}
+
+.footer{
+    border-top: 1px solid grey;
+}
+
+.footer ol{
+    list-style: none;
+    padding-left: 0;
+}
