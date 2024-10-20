@@ -1,0 +1,2 @@
+https://graphql.org/learn/introspection/
+https://www.apollographql.com/blog/4-simple-ways-to-call-a-graphql-api
