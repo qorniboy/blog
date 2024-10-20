@@ -1,0 +1,19 @@
+1. Using c libc.6.so
+2. Using srand which after research is seed random set (making random predictable)
+3. using __isoc99_scanf which is a char, we can assume that on betting we can input non numeric
+4. iteration is up to 28 (0x1d < local_c)
+5. the input local_d is going to be compared against random number with srand((int)local_d) after operation long(check + local_c *4)
+6. to break this we need
+flag = ""
+#get all srand value
+iter key < range(255): (uint8)
+ srand(key)
+ val = rand()
+ dict[val] = char(key)
+ 
+iter local_c < 30
+ val = long (check + local_c * 4)
+ srand(input)
+ rand()
+ flag += char(rand)
+print(flag)

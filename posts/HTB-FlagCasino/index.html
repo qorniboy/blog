@@ -1,0 +1,130 @@
+<!doctype html>
+    <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <link rel="stylesheet" type="text/css" href="../../styles.css">
+            <title>Q | Hackthebox - FlagCasino Writeup</title>
+        </head>
+        <body>
+            <h1>Q's blog</h1>
+            <p class="pages">
+                <a href="/">Home</a>
+                <a href="/about">About me</a>
+            </p>
+            <h1>Hackthebox - FlagCasino Writeup</h1>
+            <p>
+                This challenge mark the start of my effort on understanding exploit/malware development and uh... Honestly I don't know the name of what I want to learn specifically.
+                A simple challenge with high rating and Very Easy difficulty. Since I'm new to this I read some walkthrough and try to understand as best of what's going on.
+                First step you should download the challenge file.
+            </p>
+            <img src="images/1. File Casino.png" alt="challenge-file">
+            <p>
+                So supposedly there are a lot of reversing/decompiler tools on the net. GCC and such, but I chose to use ghidra* since it seems the most script kiddy one to use.
+            </p>
+            <img src="images/2. reverse-decompile using ghidra.png" alt="decompile">
+            <p>Source code in text:</p>
+            <pre>
+undefined8 main(void)
+
+{
+    int iVar1;
+    char local_d;
+    uint local_c;
+
+    puts("[ ** WELCOME TO ROBO CASINO **]");
+    puts(
+        "     ,     ,\n    (\\____/)\n     (_oo_)\n       (O)\n     __||__    \\)\n  []/______\\[] /\n   / \\______/ \\/\n /    /__\\\n(\\   /____\\\n---------------------"
+        );
+    puts("[*** PLEASE PLACE YOUR BETS ***]");
+    local_c = 0;
+    while( true ) {
+    if (0x1d < local_c) {
+        puts("[ ** HOUSE BALANCE $0 - PLEASE COME BACK LATER ** ]");
+        return 0;
+    }
+    printf("> ");
+    iVar1 = __isoc99_scanf(&DAT_001020fc,&local_d);
+    if (iVar1 != 1) break;
+    srand((int)local_d);
+    iVar1 = rand();
+    if (iVar1 != *(int *)(check + (long)(int)local_c * 4)) {
+        puts("[ * INCORRECT * ]");
+        puts("[ *** ACTIVATING SECURITY SYSTEM - PLEASE VACATE *** ]");
+                    /* WARNING: Subroutine does not return */
+        exit(-2);
+    }
+    puts("[ * CORRECT *]");
+    local_c = local_c + 1;
+    }
+                    /* WARNING: Subroutine does not return */
+    exit(-1);
+}
+            </pre>
+            <p>
+                Let's break this down slowly and forget all the fluff code. Focus on the meat and bread of this code, we see
+<pre>while( true ) {
+        if (0x1d < local_c) {</pre> 
+                This means that the application (read the flag length) will be 29 since 0x1d in decimal is 29.
+            </p>
+            <p>
+                Next we talk about the following snippet.
+<pre>
+    iVar1 = __isoc99_scanf(&DAT_001020fc,&local_d);
+    if (iVar1 != 1) break;
+    srand((int)local_d);
+    iVar1 = rand();
+</pre>
+                This snippet is about reading user input into local_d, set a random seed using our input (srand), then make a random value. 
+                Although this random value is not really random since we set the seed using srand*.
+            </p>
+            <p>
+                The biggest prize of this code is on this part.
+<pre>
+    if (iVar1 != *(int *)(check + (long)(int)local_c * 4)) {
+</pre>
+                This part reads as if our input (rand-ed) is not the same as long(check + local_c * 4) {Let's dub this value as flag[index]} where <i>check</i> is an internal value and <i>local_c</i> is the counter.
+                FlagCasino will stop running. In theory the "easiest" way to break this rev challenge and gain the flag is to brute-force the flag using alphanum + symbolic values.
+            </p>
+            <p>
+                Since I'm new to this kind challenge, and how the flagcasino is served to me. I thought I can only input numerical value. But when I tried to input standard HTB flag something clicked.
+                The application actually going to continue char-by-char of the flag illustrated below.
+            </p>
+            <img src="images/3. Betting usage.png" alt="input-test">
+            <p>
+                With all of these observation known, I still don't know how to break this challenge. I don't want to brute force the answer either since it might take forever.
+                After looking at a walkthrough though I understood that instead of trying to guess each instance of flag[index], we could practically instead map every char in uint8 range (because local_c is uint) as an srand seed and then randomize it.
+                Now with this dictionary[random(seed=key)] = char[key] we could then use flagcasino <i>check</i> value to calculate the result of each index as val.
+                We then can get dictionary[val] value which practically give us the flag.
+            </p>
+            <p>Using python3 pwntools, we can make the following code to gain the flag.</p>
+<pre>
+from pwn import *
+import ctypes
+
+libc = ctypes.CDLL('libc.so.6')
+dictionary = {}
+flag = ""
+
+for key in range(255):
+    libc.srand(key)
+    dictionary[libc.rand()] = chr(key)
+
+casino = ELF("./rev_flagcasino/casino", checksec=False)
+for local_c in range(30):
+    val = casino.u32(casino.sym["check"] + local_c * 4)
+    libc.srand(val)
+    flag += dictionary[val]
+print(flag)
+</pre>
+            <p class="footer">
+            <ol>
+                <li><a href="https://ghidra-sre.org/">Ghidra</a></li>
+                <li><a href="https://www.w3schools.com/c/ref_stdlib_srand.php">Srand on C</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/a88ed362-a905-4ed2-85f5-cfc8692c9842">uint8</a></li>
+                <li><a href="https://stackoverflow.com/questions/48025801/convert-int-to-ascii-characters-in-c">uint8 to char</a></li>
+                <li><a href="https://docs.pwntools.com/en/stable/">pwntools</a></li>
+            </ol>
+            </p>
+        </body>
+    </html>
