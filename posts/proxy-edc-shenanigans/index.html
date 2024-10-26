@@ -1,0 +1,82 @@
+<!doctype html>
+    <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <link rel="stylesheet" type="text/css" href="../../styles.css">
+            <title>Q | Proxy Unaware, EDC, and My Dumbass' Shenanigans</title>
+        </head>
+        <body>
+            <h1>Q's blog</h1>
+            <p class="pages">
+                <a href="/">Home</a>
+                <a href="/about">About me</a>
+            </p>
+            <h1>Proxy Unaware, EDC, and My Dumbass' Shenanigans</h1>
+            <p>
+                There are times when celestial bodies align in such a way that everything doesn't make sense in a penetration testing engagement.
+                This article I wish to document some hacky things I did, or what I discovered during a period where the usual solutions doesn't work especially regarding SSL pinning or information gathering about target's backend address.
+            </p>
+            <h2>Proxy Unaware Tomfoolery</h2>
+            <p>TLDR for this part is on this link <a href="https://portswigger.net/burp/documentation/desktop/tools/proxy/invisible">Invisible proxy</a>. If you want to read complete story you are welcome</p>
+            <p>
+                Mobile applications, whether Android or iOS usually implement SSL Pinning* which practically a mechanism to ensure that application's requests doesn't get passed through a MitM listener*.
+                Fully expecting the usual frida into SSL unpinning routine. I found something weird, I set the proxy expect the usual "Server not connected" or whatever, instead the application works...
+                I thought, probably there is no SSL Pinning and the traffic already logged through my burp proxy*. Nope, no such things.
+            </p>
+            <p>
+                So then begin my debugging of what's going on, I really don't want to read through decompiled APK since it's obfuscated, it doesn't make sense to spend that much effort.
+                Could this application doesn't talk with any backend? From a glance doesn't seem to be working that way. Then what the hell is going on?
+                Since the testing device is something I already rooted, and I own it. I tried to dive deep and check the device's network communication locally using portable tcpdump*.
+            </p>
+            <pre>
+# ./tcpdump -i wlan0 -s 0 -A //run as root. -i is interface you wish to listen to.
+            </pre>
+            <img src="images/1. youtube.png" alt="youtube-server">
+            <p>
+                Image example above shows an illustration that proves the application talks with a backend server. Thus, my research could be directed towards different path which leads to proxy unaware client* and burpsuite' invisible proxy.
+                Moral of the story for this section is uh... tcpdump works guys!
+            </p>
+            <p>This tcpdump method foreshadows the next section of this article</p>
+            <h2>EDC Mischief</h2>
+            <p>
+                EDC or Electronic Data Capture is a payment machine pictured below. At that time that machine was the only one I have ever worked on (even now I never mess with another EDC machine, I would be overjoyed if someone pay me to test another one, or teach me more about it).
+            </p>
+            <img src="images/2. EDC example.jpg" alt="">
+            <p>
+                The EDC I hacked was practically a repurposed Android phone. But wit a lot of limitations as a penetration tester:
+                <ul>
+                    <li>Device is not rooted</li>
+                    <li>Shell accesss is extremely limited</li>
+                    <li>Timeline issue, also we are asked to not damage the device</li>
+                    <li>This means we can't really try to decompile, flash the device into root, or try anything too funny</li>
+                    <li>What we can do though is to <b>change the network connection</b></li>
+                </ul>
+            </p>
+            <p>
+                So I'm faced with something I never touched before, with close to zero meaningful access I can break. Damn, we can't even get the binary to decompile (even if we do it would be too time consuming analyzing it if by chance it's obfuscated).
+                Everything is just painful all around, but then my brain tell me to go to basic. We control the device network connection. So why don't we start small and connect it to our Laptop's Hotspot?
+            </p>
+            <p>
+                My theory at the time was yes we can't understand their SSL/Encrypted communication. But at least we know their backend via DNS or any other query if we listen to our hotspot's interface in wireshark right?
+                I mean what is the EDC going to talk about? Probably standard API /v1/api/{endpoint} or some standard naming we can enumerate using content discovery once we know the address (or if lucky finding some documentations).
+            </p>
+            <img src="images/2. another youtube.png" alt="another-youtube">
+            <pre>
+ssl.handshake.extension.type == 0 (example query to get SNI Hello, I recommend actually reading the log just in case they don't communicate via SSL/TLS)
+            </pre>
+            <p>
+                At that time finally getting the backend address was huge for the engagement, since as I mentioned we are able to enumerate the backend. This leads us to multiple critical finding since a lot of the server is misconfigured such as xp_cmdshell.
+                In short, understanding how network works (the essentials) is great, you don't always need fancy framework or scripting to hack.
+            </p>
+            <p class="footer">
+            <ol>
+                <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Pinning_Cheat_Sheet.html">SSL Pinning</a></li>
+                <li><a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">MitM</a></li>
+                <li><a href="https://portswigger.net/burp/communitydownload">BurpSuite</a></li>
+                <li><a href="https://www.tcpdump.org/">tcpdump</a> (I forgot where I downloaded the portable Android version, sorry! I trust you can google it or build from source dear hackers!)</li>
+                <li><a href="https://www.oreilly.com/library/view/hands-on-application-penetration/9781788994064/8cfeac29-7e00-444d-b81c-e6ad33f272f4.xhtml#:~:text=A%20non%2Dproxy%2Daware%20client,use%20the%20browser's%20proxy%20options.">Proxy unaware client</a></li>
+            </ol>
+            </p>
+        </body>
+    </html>
