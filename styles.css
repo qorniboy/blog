@@ -10,7 +10,7 @@ body{
     line-height: 1.5;
     text-align: justify;
 }
-h1, h2{
+h1, h2, h3{
     border-bottom: 1px solid grey;
     font-family: Helvetica;
 }
